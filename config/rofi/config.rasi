@@ -1,0 +1,10 @@
+configuration {
+  modi: "window,run,ssh";
+  theme: "./theme.rasi";
+	icon-theme: "Papirus";
+	show-icons: true;
+	sidebar-mode: true;
+  font: "hack 18";
+  display-drun: "run";
+  matching: "fuzzy";
+}
