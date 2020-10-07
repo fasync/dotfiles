@@ -1,4 +1,4 @@
-(setq  package-list '(rtags company-irony multi-term irony-eldoc clang-format dashboard neotree markdown-mode cmake-ide monokai-theme cmake-mode flycheck-irony lua-mode nasm-mode yasnippet py-autopep8 elpy racer rust-mode pyenv-mode counsel-dash cmake-project))
+(setq package-list '(rtags company-irony multi-term irony-eldoc clang-format dashboard neotree markdown-mode cmake-ide badwolf-theme cmake-mode flycheck-irony lua-mode nasm-mode yasnippet py-autopep8 elpy racer rust-mode pyenv-mode counsel-dash cmake-project))
 
 ;; Melpa Repo
 (require 'package)
@@ -41,7 +41,7 @@ There are two things you can do about this warning:
 (require 'neotree)
 (require 'markdown-mode)
 (require 'cmake-ide)
-(require 'monokai-theme)
+(require 'badwolf-theme)
 (require 'cmake-mode)
 (require 'flycheck-irony)
 (require 'lua-mode)
@@ -49,6 +49,8 @@ There are two things you can do about this warning:
 (require 'yasnippet)
 (require 'py-autopep8)
 (require 'company-irony-c-headers)
+(require 'helm)
+(require 'helm-config)
 
 ;; =================================================================================
 
@@ -57,8 +59,8 @@ There are two things you can do about this warning:
 ;;=============
 (dashboard-setup-startup-hook)
 					; (set-default-font "Inconsolata-12")
-(set-frame-font "Hack-8")		;
-(load-theme 'monokai t)
+(set-frame-font "Hack-12")		;
+(load-theme 'badwolf t)
 (add-hook 'find-file-hook (lambda () (linum-mode 1))) ; Line Nr
 (column-number-mode 1)
 (tool-bar-mode -1)                                    ; Disable Toolbar
@@ -98,7 +100,7 @@ There are two things you can do about this warning:
 (add-hook 'irony-mode-hook 'my-irony-mode-hook)
 (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
 (eval-after-load 'company
-  '(add-to-list 'company-backends 'company-irony))
+		 '(add-to-list 'company-backends 'company-irony))
 (eval-after-load "irony"
   '(custom-set-variables '(irony-additional-clang-options '("-std=c++14 -Wall -Wextra -I/usr/lib/clang/10.0.0/include/"))))
 (add-hook 'irony-mode-hook 'company-irony-setup-begin-commands)
@@ -177,6 +179,7 @@ There are two things you can do about this warning:
              ("T" . rtags-taglist)))))
 
 ;; DOCS
+(add-to-list 'helm-sources-using-default-as-input 'helm-source-man-pages)
 (global-set-key (quote [f12]) (quote counsel-dash))
 (global-set-key (quote [f11]) (quote compile))
 
@@ -189,12 +192,25 @@ There are two things you can do about this warning:
 ;; =========
 ;; Formating
 ;; =========
-(setq-default indent-tabs-mode t)
-(setq-default tab-width 2)
+;; (setq-default indent-tabs-mode t)
+;; (setq-default tab-width 2)
 ;;(defvaralias 'c-basic-offset 'tab-width)
-(setq c-default-style "linux")
+(setq c-default-style "bsd")
 (global-set-key [C-M-tab] 'clang-format-region)
 (setq clang-format-style-option "~/.clang-format")
+(defun clang-format-save-hook-for-this-buffer ()
+  "Create a buffer local save hook."
+  (add-hook 'before-save-hook
+    (lambda ()
+      (progn
+        (when (locate-dominating-file "." ".clang-format")
+          (clang-format-buffer))
+        nil))
+    nil
+    t))
+(add-hook 'c-mode-hook (lambda () (clang-format-save-hook-for-this-buffer)))
+(add-hook 'c++-mode-hook (lambda () (clang-format-save-hook-for-this-buffer)))
+(add-hook 'glsl-mode-hook (lambda () (clang-format-save-hook-for-this-buffer)))
 
 ;;====
 ;; GDB
@@ -238,27 +254,23 @@ There are two things you can do about this warning:
 (add-hook 'term-mode-hook (lambda ()
                             (define-key term-raw-map (kbd "C-y") 'term-paste)))
 
-;; w3m
-(setq w3m-use-cookies nil)
-(setq browse-url-browser-function 'w3m-browse-url)
-(autoload 'w3m-browse-url "w3m" "URL?:" t)
-(global-set-key "\C-xm" 'browse-url-at-point)
-
 ;; Org Mode Agenda
 (setq recentf-exclude '("^/var/folders\\.*"
                         "COMMIT_EDITMSG\\'"
                         ".*-autoloads\\.el\\'"
                         "[/\\]\\.emacs.d/"))
 
+(anzu-mode +1)
+
 ;; Multi-Term
 (require 'multi-term)
-(setq multi-term-program "/bin/bash")
+(setq multi-term-program "/bin/mksh")
 (when (require 'multi-term nil t)
   (global-set-key (kbd "<f5>") 'multi-term)
   (global-set-key (kbd "<C-next>") 'multi-term-next)
   (global-set-key (kbd "<C-prior>") 'multi-term-prev)
   (setq multi-term-buffer-name "term"
-        multi-term-program "/bin/bash"))
+        multi-term-program "/bin/mksh"))
 
 ;; Ispell
 (add-to-list 'ispell-local-dictionary-alist '("de_DE"
@@ -290,31 +302,32 @@ There are two things you can do about this warning:
 ;; RUST
 (autoload 'rust-mode "rust-mode" nil t)
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
+
 (add-hook 'rust-mode-hook #'racer-mode)
 (add-hook 'racer-mode-hook #'eldoc-mode)
+
 (add-hook 'racer-mode-hook #'company-mode)
+
+;; ;; Python
+;; (elpy-enable)
+;; (defvar myPackages
+;;   '(better-defaults
+;;     elpy
+;;     flycheck ;; add the flycheck package
+;;     py-autopep8
+;;     ))
+;; (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+;; (add-hook 'elpy-mode-hook 'flycheck-mode)
+;; (add-hook 'elpy-mode-hook 'py-autopep8-enable-on-save)
+;; (pyenv-mode)
+
 (require 'rust-mode)
 (define-key rust-mode-map (kbd "TAB") #'company-indent-or-complete-common)
 (setq company-tooltip-align-annotations t)
+(setq racer-rust-src-path "~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/")
+
 (add-hook 'rust-mode-hook #'flycheck-mode)
 (add-hook 'flycheck-mode-hook #'flycheck-rust-setup)
-
-;; Haskell
-(add-hook 'haskell-mode-hook #'lsp)
-(add-to-list 'auto-mode-alist '("\\.lucius\\'" . css-mode))
-(add-to-list 'auto-mode-alist '("\\.julius\\'" . javascript-mode))
-
- (setq lsp-haskell-process-path-hie "hls-wrapper")
-
-;; Python
-(elpy-enable)
-(setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-(add-hook 'elpy-mode-hook 'flycheck-mode)
-(add-hook 'elpy-mode-hook 'py-autopep8-enable-on-save)
-(pyenv-mode)
-(setq python-shell-interpreter "ipython"
-      python-shell-interpreter-args "-i --simple-prompt")
-
 
 ;;====================================================================
 (custom-set-variables
@@ -325,11 +338,7 @@ There are two things you can do about this warning:
  '(irony-additional-clang-options
 	 '("-std=c++14 -Wall -Wextra -I/usr/lib/clang/10.0.0/include/"))
  '(package-selected-packages
-	 '(lsp-ui lsp-mode lsp-haskell hamlet-mode haskell-mode jedi company-anaconda anaconda-mode company-rtags yaml-mode flycheck-rust w3m rtags racer pyenv-mode py-autopep8 projectile neotree nasm-mode multi-term markdown-mode lua-mode irony-eldoc helm flycheck-irony elpy dashboard counsel-dash company-irony-c-headers company-irony cmake-project cmake-mode cmake-ide clang-format badwolf-theme))
- '(safe-local-variable-values
-	 '((hamlet/basic-offset . 4)
-		 (haskell-process-use-ghci . t)
-		 (haskell-indent-spaces . 4))))
+	 '(haskell-snippets haskell-mode lua-mode ranger anzu flycheck-rust w3m rtags racer pyenv-mode py-autopep8 projectile neotree nasm-mode multi-term markdown-mode irony-eldoc helm flycheck-irony elpy dashboard counsel-dash company-irony-c-headers company-irony cmake-project cmake-mode cmake-ide clang-format badwolf-theme)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
