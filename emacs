@@ -1,4 +1,4 @@
-(setq package-list '(rtags company-irony company-irony-c-headers multi-term irony clang-format dashboard neotree markdown-mode cmake-ide monokai-pro-theme cmake-mode flycheck-irony nasm-mode projectile racer rust-mode cmake-project))
+(setq package-list '(rtags company-irony company-irony-c-headers multi-term irony clang-format dashboard neotree markdown-mode cmake-ide yasnippet monokai-pro-theme cmake-mode flycheck-irony flycheck-rust nasm-mode projectile rustic cmake-project))
 
 ;; Melpa Repo
 (require 'package)
@@ -41,6 +41,7 @@ There are two things you can do about this warning:
 (require 'flycheck-irony)
 (require 'nasm-mode)
 (require 'company-irony-c-headers)
+(require 'yasnippet)
 
 ;; =================================================================================
 
@@ -90,7 +91,7 @@ There are two things you can do about this warning:
 (eval-after-load 'company
 		 '(add-to-list 'company-backends 'company-irony))
 (eval-after-load "irony"
-  '(custom-set-variables '(irony-additional-clang-options '("-std=c++14 -Wall -Wextra -I/usr/lib/clang/10.0.0/include/"))))
+  '(custom-set-variables '(irony-additional-clang-options '("-std=c++14 -Wall -Wextra -I/usr/lib/clang/10.0.0/include/ -I/usr/local/include"))))
 (add-hook 'irony-mode-hook 'company-irony-setup-begin-commands)
 
 (defun irony--check-expansion ()
@@ -191,16 +192,25 @@ There are two things you can do about this warning:
 (add-to-list 'auto-mode-alist '("\\.asm\\'" . nasm-mode))
 
 ;; RUST
-(require 'rust-mode)
-(autoload 'rust-mode "rust-mode" nil t)
-(add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
-(add-hook 'rust-mode-hook #'racer-mode)
-(add-hook 'racer-mode-hook #'company-mode)
-(define-key rust-mode-map (kbd "TAB") #'company-indent-or-complete-common)
-(setq company-tooltip-align-annotations t)
-;;(setq racer-rust-src-path "~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/")
-(add-hook 'rust-mode-hook #'flycheck-mode)
-(add-hook 'flycheck-mode-hook #'flycheck-rust-setup)
+;; (require 'rust-mode)
+;; (autoload 'rust-mode "rust-mode" nil t)
+;; (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
+;; (add-hook 'rust-mode-hook
+;;           (lambda () (setq indent-tabs-mode nil)))
+;; (add-hook 'rust-mode-hook #'racer-mode)
+;; (add-hook 'racer-mode-hook #'company-mode)
+;; (define-key rust-mode-map (kbd "TAB") #'company-indent-or-complete-common)
+;; (setq company-tooltip-align-annotations t)
+;; (add-hook 'rust-mode-hook #'flycheck-mode)
+;; (add-hook 'flycheck-mode-hook #'flycheck-rust-setup)
+;; (setq rust-format-on-save t)
+;; (define-key rust-mode-map (kbd "C-c C-r") 'rust-run)
+;; (define-key rust-mode-map (kbd "C-c C-c") 'rust-compile)
+;; (define-key rust-mode-map (kbd "C-c C-l") 'rust-run-clippy)
+
+(setq lsp-rust-analyzer-server-command '("/usr/local/bin/rust-analyzer"))
+(setq rustic-format-on-save t)
+
 
 ;; Rename Buffers and Files
 (defun rename-this-buffer-and-file ()
@@ -250,6 +260,11 @@ There are two things you can do about this warning:
 (global-set-key (kbd "C-x <right>") 'windmove-right)
 (global-set-key (kbd "C-x <left>") 'windmove-left)
 
+;; Snippets
+(yas-global-mode 1)
+(define-key yas-minor-mode-map (kbd "C-c y") #'yas-expand)
+
+
 ;; Backup-diretory and Server
 (setf backup-directory-alist '((".*" . "~/.saves/")))
 (server-start)
@@ -263,7 +278,7 @@ There are two things you can do about this warning:
  '(irony-additional-clang-options
    '("-std=c++14 -Wall -Wextra -I/usr/lib/clang/10.0.0/include/"))
  '(package-selected-packages
-   '(haskell-snippets haskell-mode ranger anzu flycheck-rust w3m rtags racer pyenv-mode py-autopep8 projectile neotree nasm-mode multi-term markdown-mode helm flycheck-irony elpy dashboard counsel-dash company-irony-c-headers company-irony cmake-project cmake-mode cmake-ide clang-format badwolf-theme)))
+   '(lsp-mode rustic yasnippet haskell-snippets haskell-mode ranger anzu flycheck-rust w3m rtags pyenv-mode py-autopep8 projectile neotree nasm-mode multi-term markdown-mode helm flycheck-irony elpy dashboard counsel-dash company-irony-c-headers company-irony cmake-project cmake-mode cmake-ide clang-format badwolf-theme)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

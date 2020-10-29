@@ -1,3 +1,8 @@
+# Rust Env
+. $HOME/.cargo/env
+export LD_LIBRARY_PATH=$(rustc --print sysroot)/lib:$LD_LIBRARY_PATH
+export RUST_SRC_PATH=$(rustc --print sysroot)/lib/rustlib/src/rust/src
+
 # ENV
 export AUTO_SYNC_PATH="$HOME/.org"
 export GIT_REP_PATH="/home/shell/Documents/Git:/home/shell/Prog"

@@ -1,14 +1,10 @@
-# Rust ENV
-source $HOME/.cargo/env
-export LD_LIBRARY_PATH=$(rustc --print sysroot)/lib:$LD_LIBRARY_PATH
-
 # ENV
 export AUTO_SYNC_PATH="$HOME/.org"
+export GIT_REP_PATH="/home/shell/Documents/Git:/home/shell/Prog"
 export cxx=clang++
 export PATH="/usr/lib/llvm/8/bin/:$PATH"
 export cc=clang
 export EDITOR=vim
-export SBCL_HOME="/usr/lib64/sbcl"
 # Color output
 alias ls='ls --color=auto'
 alias dir='dir --color=auto'
@@ -16,12 +12,21 @@ alias vdir='vdir --color=auto'
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
+alias startx='startx -- vt1'
+
+# Useful stuff
+alias wttr='curl -sS  http://wttr.in/Uelzen | less'
+
 
 # alias
 alias ll='ls -lah'
-alias youdl='youtube-dl --extract-audio --audio-format vorbis --audio-quality 0 --yes-playlist'
+alias youdl='youtube-dl --extract-audio --audio-format vorbis --audio-quality 0 --yes-playlist --add-metadata --metadata-from-title "%(artist)s - %(title)s" -o "~/Music/%(title)s.%(ext)s"'
 alias youdl_video='youtube-dl -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4"'
 alias setwl='feh --bg-fill --randomize Bilder/Wallpaper/*'
+
+# SSH-Keychain
+alias init_ssh='keychain ~/.ssh/id_rsa; keychain ~/.ssh/ipsec; keychain ~/.ssh/dfki'
+. ~/.keychain/Workstation-sh
 
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
