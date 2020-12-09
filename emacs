@@ -1,4 +1,4 @@
-(setq package-list '(rtags company-irony company-irony-c-headers multi-term irony clang-format dashboard neotree markdown-mode cmake-ide yasnippet monokai-pro-theme cmake-mode flycheck-irony flycheck-rust nasm-mode projectile rustic cmake-project))
+(setq package-list '(lsp-mode lsp-ui multi-term clang-format dashboard treemacs markdown-mode cmake-ide yasnippet monokai-pro-theme cmake-mode flycheck-irony flycheck-rust nasm-mode projectile rustic))
 
 ;; Melpa Repo
 (require 'package)
@@ -27,21 +27,19 @@ There are two things you can do about this warning:
     (package-install package)))
 
 (require 'org)
-(require 'cmake-project)
-(require 'rtags)
 (require 'company)
 (require 'multi-term)
-(require 'irony)
 (require 'clang-format)
 (require 'dashboard)
-(require 'neotree)
+(require 'treemacs)
 (require 'markdown-mode)
-(require 'cmake-ide)
 (require 'cmake-mode)
-(require 'flycheck-irony)
 (require 'nasm-mode)
-(require 'company-irony-c-headers)
 (require 'yasnippet)
+(require 'rust-mode)
+(require 'lsp-mode)
+(require 'lsp-ui)
+(require 'rustic)
 
 ;; =================================================================================
 
@@ -49,8 +47,7 @@ There are two things you can do about this warning:
 ;; GUI settings
 ;;=============
 (dashboard-setup-startup-hook)
-					; (set-default-font "Inconsolata-12")
-(set-frame-font "Hack-12")		;
+(set-frame-font "Hack-12")
 (load-theme 'monokai-pro t)
 (add-hook 'find-file-hook (lambda () (linum-mode 1))) ; Line Nr
 (column-number-mode 1)
@@ -58,8 +55,8 @@ There are two things you can do about this warning:
 (menu-bar-mode -1)                                    ; Disable Menubar
 (scroll-bar-mode -1)                                  ; Disable Scrollbar
 (show-paren-mode 1)                                   ; Show parens
-(global-set-key [f8] 'neotree-toggle)
 (electric-pair-mode 1)
+(global-set-key [f8] 'treemacs)
 (set-cursor-color "#ffffff")
 (projectile-mode +1)
 (define-key projectile-mode-map (kbd "s-p") 'projectile-command-map)
@@ -67,107 +64,19 @@ There are two things you can do about this warning:
 
 ;; =================================================================================
 
-;; ===============
-;; Hooks (C & C++)
-;; ===============
-(add-hook 'c++-mode-hook 'irony-mode)	; Irony Mode C++ Hook
-(add-hook 'c++-mode-hook 'maybe-cmake-project-hook)
-(add-hook 'c-mode-hook 'irony-mode)		; Irony Mode C Hook
-(add-hook 'c-mode-common-hook 'hs-minor-mode) ; Fold Mode C Hook
-(add-hook 'c++-mode-common-hook 'hs-minor-mode) ; Fold Mode C++ Hook
-(add-hook 'c++-mode-hook 'flycheck-mode)		; Flycheck Mode C++ Hook
-(add-hook 'c-mode-hook 'flycheck-mode)			; Flycheck Mode C Hook
-(add-hook 'c++-mode-hook 'company-mode)			; Company Mode C++ Hook
-(add-hook 'c-mode-hook 'company-mode)			; Company Mode C Hook
+;; LSP
+(use-package lsp-ui)
+(define-key lsp-ui-mode-map [remap xref-find-definitions] #'lsp-ui-peek-find-definitions)
+(define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references)
 
-;; Starting Irony-Company
-(defun my-irony-mode-hook ()
-  (define-key irony-mode-map [remap completion-at-point]
-	        'irony-completion-at-point-async)
-  (define-key irony-mode-map [remap complete-symbol]
-	        'irony-completion-at-point-async))
-(add-hook 'irony-mode-hook 'my-irony-mode-hook)
-(add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
-(eval-after-load 'company
-		 '(add-to-list 'company-backends 'company-irony))
-(eval-after-load "irony"
-  '(custom-set-variables '(irony-additional-clang-options '("-std=c++14 -Wall -Wextra -I/usr/lib/clang/10.0.0/include/ -I/usr/local/include"))))
-(add-hook 'irony-mode-hook 'company-irony-setup-begin-commands)
-
-(defun irony--check-expansion ()
-  (save-excursion
-      (if (looking-at "\\_>") t
-	    (backward-char 1)
-	        (if (looking-at "\\.") t
-		        (backward-char 1)
-			      (if (looking-at "->") t nil)))))
-(defun irony--indent-or-complete ()
-  "Indent or Complete"
-  (interactive)
-  (cond ((and (not (use-region-p))
-	      (irony--check-expansion))
-	 (message "complete")
-	 (company-complete-common))
-	      (t
-		       (message "indent")
-		              (call-interactively 'c-indent-line-or-region))))
-(defun irony-mode-keys ()
-  "Modify keymaps used by `irony-mode'."
-  (local-set-key (kbd "TAB") 'irony--indent-or-complete)
-  (local-set-key [tab] 'irony--indent-or-complete))
-(add-hook 'c-mode-common-hook 'irony-mode-keys)
-(with-eval-after-load 'company
-  (add-to-list 'company-backends 'company-irony-c-headers))
-
-;; Starting Flycheck
-(with-eval-after-load 'flycheck
-  (add-hook 'flycheck-mode-hook #'flycheck-irony-setup)
-  (flycheck-add-next-checker 'irony '(warning . c/c++-cppcheck)))
-
-;; Starting rtags and Cmake-IDE
-(cmake-ide-setup)
-
-(setq rtags-autostart-diagnostics t)
-(rtags-diagnostics)
-(setq rtags-completions-enabled t)
-(push 'company-rtags company-backends)
-(global-company-mode)
-(define-key c-mode-base-map (kbd "<C-tab>") (function company-complete))
-
-(eval-after-load 'cc-mode
-  '(progn
-     (require 'rtags)
-     (mapc (lambda (x)
-             (define-key c-mode-base-map
-               (kbd (concat "C-c r " (car x))) (cdr x)))
-           '(("." . rtags-find-symbol-at-point)
-             ("," . rtags-find-references-at-point)
-             ("v" . rtags-find-virtuals-at-point)
-             ("V" . rtags-print-enum-value-at-point)
-             ("/" . rtags-find-all-references-at-point)
-             ("Y" . rtags-cycle-overlays-on-screen)
-             (">" . rtags-find-symbol)
-             ("<" . rtags-find-references)
-             ("-" . rtags-location-stack-back)
-             ("+" . rtags-location-stack-forward)
-             ("D" . rtags-diagnostics)
-             ("G" . rtags-guess-function-at-point)
-             ("p" . rtags-set-current-project)
-             ("P" . rtags-print-dependencies)
-             ("e" . rtags-reparse-file)
-             ("E" . rtags-preprocess-file)
-             ("R" . rtags-rename-symbol)
-             ("M" . rtags-symbol-info)
-             ("S" . rtags-display-summary)
-             ("O" . rtags-goto-offset)
-             (";" . rtags-find-file)
-             ("F" . rtags-fixit)
-             ("X" . rtags-fix-fixit-at-point)
-             ("B" . rtags-show-rtags-buffer)
-             ("I" . rtags-imenu)
-             ("T" . rtags-taglist)))))
-
-(global-set-key (quote [f11]) (quote compile))
+(setq gc-cons-threshold (* 100 1024 1024)
+      read-process-output-max (* 1024 1024)
+      treemacs-space-between-root-nodes nil
+      company-idle-delay 0.0
+      company-minimum-prefix-length 1
+      lsp-idle-delay 0.1 ;; clangd is fast
+      ;; be more ide-ish
+      lsp-headerline-breadcrumb-enable t)
 
 ;; Indent
 (setq c-default-style "bsd")
@@ -192,25 +101,16 @@ There are two things you can do about this warning:
 (add-to-list 'auto-mode-alist '("\\.asm\\'" . nasm-mode))
 
 ;; RUST
-;; (require 'rust-mode)
-;; (autoload 'rust-mode "rust-mode" nil t)
-;; (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
-;; (add-hook 'rust-mode-hook
-;;           (lambda () (setq indent-tabs-mode nil)))
-;; (add-hook 'rust-mode-hook #'racer-mode)
-;; (add-hook 'racer-mode-hook #'company-mode)
-;; (define-key rust-mode-map (kbd "TAB") #'company-indent-or-complete-common)
-;; (setq company-tooltip-align-annotations t)
-;; (add-hook 'rust-mode-hook #'flycheck-mode)
-;; (add-hook 'flycheck-mode-hook #'flycheck-rust-setup)
-;; (setq rust-format-on-save t)
-;; (define-key rust-mode-map (kbd "C-c C-r") 'rust-run)
-;; (define-key rust-mode-map (kbd "C-c C-c") 'rust-compile)
-;; (define-key rust-mode-map (kbd "C-c C-l") 'rust-run-clippy)
-
 (setq lsp-rust-analyzer-server-command '("/usr/local/bin/rust-analyzer"))
+(add-to-list 'auto-mode-alist '("\\.rs\\'" . rustic-mode))
+(use-package cargo
+        :ensure t
+        :config 
+        ;; change emacs PATH o include cargo/bin
+        (setenv "PATH" (concat (getenv "PATH") ":~/.cargo/bin"))
+        (setq exec-path (append exec-path '("~/.cargo/bin")))
+)
 (setq rustic-format-on-save t)
-
 
 ;; Rename Buffers and Files
 (defun rename-this-buffer-and-file ()
@@ -260,25 +160,88 @@ There are two things you can do about this warning:
 (global-set-key (kbd "C-x <right>") 'windmove-right)
 (global-set-key (kbd "C-x <left>") 'windmove-left)
 
+(use-package treemacs
+  :ensure t
+  :defer t
+  :init
+  (with-eval-after-load 'winum
+    (define-key winum-keymap (kbd "F8") #'treemacs-select-window))
+  :config
+  (progn
+    (setq treemacs-collapse-dirs                 (if treemacs-python-executable 3 0)
+          treemacs-deferred-git-apply-delay      0.5
+          treemacs-directory-name-transformer    #'identity
+          treemacs-display-in-side-window        t
+          treemacs-eldoc-display                 t
+          treemacs-file-event-delay              5000
+          treemacs-file-extension-regex          treemacs-last-period-regex-value
+          treemacs-file-follow-delay             0.2
+          treemacs-file-name-transformer         #'identity
+          treemacs-follow-after-init             t
+          treemacs-git-command-pipe              ""
+          treemacs-goto-tag-strategy             'refetch-index
+          treemacs-indentation                   2
+          treemacs-indentation-string            " "
+          treemacs-is-never-other-window         nil
+          treemacs-max-git-entries               5000
+          treemacs-missing-project-action        'ask
+          treemacs-move-forward-on-expand        nil
+          treemacs-no-png-images                 nil
+          treemacs-no-delete-other-windows       t
+          treemacs-project-follow-cleanup        nil
+          treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+          treemacs-position                      'left
+          treemacs-show-cursor                   nil
+          treemacs-show-hidden-files             t
+          treemacs-silent-filewatch              nil
+          treemacs-silent-refresh                nil
+          treemacs-sorting                       'alphabetic-asc
+          treemacs-space-between-root-nodes      t
+          treemacs-tag-follow-cleanup            t
+          treemacs-tag-follow-delay              1.5
+          treemacs-width                         30
+          treemacs-workspace-switch-cleanup      nil)
+
+    ;; The default width and height of the icons is 22 pixels. If you are
+    ;; using a Hi-DPI display, uncomment this to double the icon size.
+    ;;(treemacs-resize-icons 44)
+
+    (treemacs-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode t)
+    (pcase (cons (not (null (executable-find "git")))
+                 (not (null treemacs-python-executable)))
+      (`(t . t)
+       (treemacs-git-mode 'deferred))
+      (`(t . _)
+       (treemacs-git-mode 'simple))))
+  :bind
+  (:map global-map
+        ("M-0"       . treemacs-select-window)
+        ("C-x t 1"   . treemacs-delete-other-windows)
+        ("C-x t t"   . treemacs)
+        ("C-x t B"   . treemacs-bookmark)
+        ("C-x t C-t" . treemacs-find-file)
+        ("C-x t M-t" . treemacs-find-tag)))
+
+(use-package treemacs-projectile
+  :after treemacs projectile
+  :ensure t)
+
 ;; Snippets
 (yas-global-mode 1)
 (define-key yas-minor-mode-map (kbd "C-c y") #'yas-expand)
 
-
 ;; Backup-diretory and Server
 (setf backup-directory-alist '((".*" . "~/.saves/")))
 (server-start)
-
-;;====================================================================
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(irony-additional-clang-options
-   '("-std=c++14 -Wall -Wextra -I/usr/lib/clang/10.0.0/include/"))
  '(package-selected-packages
-   '(lsp-mode rustic yasnippet haskell-snippets haskell-mode ranger anzu flycheck-rust w3m rtags pyenv-mode py-autopep8 projectile neotree nasm-mode multi-term markdown-mode helm flycheck-irony elpy dashboard counsel-dash company-irony-c-headers company-irony cmake-project cmake-mode cmake-ide clang-format badwolf-theme)))
+   '(treemacs-all-the-icons yasnippet use-package rustic rtags nasm-mode multi-term monokai-pro-theme lsp-ui flycheck-rust flycheck-irony dashboard company-irony-c-headers company-irony cmake-project cmake-mode cmake-ide clang-format cargo)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

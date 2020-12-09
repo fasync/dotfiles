@@ -1,0 +1,57 @@
+# $FreeBSD: releng/12.2/share/skel/dot.cshrc 363525 2020-07-25 11:57:39Z pstef $
+#
+# .cshrc - csh resource script, read at beginning of execution by each shell
+#
+# see also csh(1), environ(7).
+# more examples available at /usr/share/examples/csh/
+#
+
+alias h		'history 25'
+alias j		'jobs -l'
+alias ls        'ls --color'
+alias grep      'grep --color'
+alias fgrep     'fgrep --color'
+alias egrep     'egrep --color'
+alias la	'ls --color -aF'
+alias lf	'ls --color -FA'
+alias ll	'ls --color -lAF'
+alias wttr      'curl -sS  https://wttr.in/Uelzen | less'
+alias scan      'ssh rpi "scanimage -d hpaio:/net/DeskJet_3630_series?ip=192.168.0.112 --resolution 300 --format=png"'
+alias youdl     'youtube-dl --extract-audio --audio-format vorbis --audio-quality 0 --yes-playlist --add-metadata --metadata-from-title "%(artist)s - %(title)s" -o "~/Music/%(title)s.%(ext)s"'
+alias youdl_video 'youtube-dl -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4"'
+alias mutt      'neomutt'
+
+# These are normally set through /etc/login.conf.  You may override them here
+# if wanted.
+# set path = (/sbin /bin /usr/sbin /usr/bin /usr/local/sbin /usr/local/bin $HOME/bin)
+# A righteous umask
+# umask 22
+
+setenv  PATH              $HOME/.cargo/bin:$PATH
+setenv	EDITOR	          vi
+setenv	PAGER	          less
+if(! $?LD_LIBRARY_PATH) then
+    set LD_LIBRARY_PATH
+endif
+setenv  LD_LIBRARY_PATH  `rustc --print sysroot`/lib:$LD_LIBRARY_PATH
+
+if ($?prompt) then
+	# An interactive shell -- set some stuff up
+	set prompt = "%N@%m:%~ %# "
+	set promptchars = "%#"
+
+	set filec
+	set history = 1000
+	set savehist = (1000 merge)
+	set autolist = ambiguous
+	# Use history to aid expansion
+	set autoexpand
+	set autorehash
+	set mail = (/var/mail/$USER)
+	if ( $?tcsh ) then
+		bindkey "^W" backward-delete-word
+		bindkey -k up history-search-backward
+		bindkey -k down history-search-forward
+	endif
+
+endif
